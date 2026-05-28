@@ -7,11 +7,20 @@ from das_ancc.dispersion.picking import auto_pick
 def make_synthetic_ncf(dist_m: float, velocity: float,
                         period: float, fs: float = 100.0,
                         max_lag: float = 30.0) -> np.ndarray:
-    """Sinusoidal NCF with known phase velocity."""
+    """Gaussian-modulated cosine (wave packet) NCF with known phase velocity.
+
+    A pure sinusoid has a flat Hilbert envelope and cannot be localised in
+    time, so the peak in the FTAN image would be dominated by numerical
+    noise.  A wave packet (Gaussian amplitude × cosine carrier) gives a
+    spatially compact envelope that peaks cleanly at the expected arrival.
+    """
     n = int(2 * max_lag * fs) + 1
     lags = (np.arange(n) - n // 2) / fs
     f0 = 1.0 / period
-    ncf = np.cos(2 * np.pi * f0 * (lags - dist_m / velocity))
+    t_arr = dist_m / velocity
+    sigma = 3.0 * period          # envelope width ~3 periods
+    ncf = (np.exp(-0.5 * ((lags - t_arr) / sigma) ** 2)
+           * np.cos(2 * np.pi * f0 * (lags - t_arr)))
     return ncf
 
 

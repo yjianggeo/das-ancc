@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import hilbert as _hilbert
 
 
 def ftan_phase_velocity(ncf: np.ndarray, dt: float, dist: float,
@@ -26,9 +27,8 @@ def ftan_phase_velocity(ncf: np.ndarray, dt: float, dist: float,
         f0 = 1.0 / T
         gauss = np.exp(-alpha * ((freqs - f0) / f0) ** 2)
         filtered = np.fft.irfft(ncf_fft * gauss, n=n)
-        # Positive-lag envelope
-        pos = np.abs(filtered[n // 2:])
-        pos_times = np.arange(len(pos)) * dt
+        # Positive-lag envelope (analytic signal magnitude avoids zero-crossing artefacts)
+        pos = np.abs(_hilbert(filtered)[n // 2:])
 
         for j, v in enumerate(velocities):
             t_arr = dist / v

@@ -46,14 +46,14 @@ def stage_correlate(cfg, preprocessed, geom, output_dir):
     fs = preprocessed[0][1][0].stats.sampling_rate
     max_lag_s = cfg.correlate["max_lag"]
     max_lag_samples = int(max_lag_s * fs)
-    channels = list(range(len(geom)))
+    channels = geom.channel.tolist()
 
     for seg_id, st in preprocessed:
         # Map station name suffix to channel index
         data = {}
         for tr in st:
             try:
-                ch = int(tr.stats.station.lstrip("CH"))
+                ch = int(tr.stats.station.removeprefix("CH"))
             except ValueError:
                 continue
             data[ch] = tr.data
@@ -76,7 +76,7 @@ def stage_correlate(cfg, preprocessed, geom, output_dir):
 
 
 def stage_stack(cfg, geom, output_dir):
-    channels = list(range(len(geom)))
+    channels = geom.channel.tolist()
     for comp in cfg.data["components"]:
         for i, j in combinations(channels, 2):
             ncfs = load_ncfs(output_dir, i, j, comp)
@@ -87,7 +87,7 @@ def stage_stack(cfg, geom, output_dir):
 
 
 def stage_dispersion(cfg, geom, output_dir):
-    channels = list(range(len(geom)))
+    channels = geom.channel.tolist()
     pmin, pmax = cfg.dispersion["period_range"]
     vmin, vmax = cfg.dispersion["velocity_range"]
     periods = np.linspace(pmin, pmax, 30)
@@ -110,7 +110,7 @@ def stage_dispersion(cfg, geom, output_dir):
 
 
 def stage_imaging(cfg, geom, output_dir):
-    channels = list(range(len(geom)))
+    channels = geom.channel.tolist()
     pmin, pmax = cfg.dispersion["period_range"]
     periods = np.linspace(pmin, pmax, 30)
 
