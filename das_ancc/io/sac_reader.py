@@ -1,6 +1,5 @@
 from pathlib import Path
 from obspy import read, Stream
-from obspy.core import UTCDateTime
 
 
 def read_sac_segments(sac_dir: str, segment_length: int) -> list[tuple[str, Stream]]:
