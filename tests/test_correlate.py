@@ -1,6 +1,9 @@
 import numpy as np
 import pytest
 from das_ancc.correlate.cross_correlate import fft_correlate
+from das_ancc.correlate.component_projection import (
+    inter_station_azimuth, projection_weights
+)
 
 
 def test_fft_correlate_known_delay():
@@ -26,3 +29,39 @@ def test_fft_correlate_zero_lag_for_identical():
     ncf = fft_correlate(data, data, max_lag_samples=100)
     peak_lag = np.argmax(ncf) - 100
     assert peak_lag == 0
+
+
+def test_inter_station_azimuth_east():
+    az = inter_station_azimuth(0, 0, 100, 0)  # due East
+    assert az == pytest.approx(90.0, abs=0.1)
+
+
+def test_inter_station_azimuth_north():
+    az = inter_station_azimuth(0, 0, 0, 100)  # due North
+    assert az == pytest.approx(0.0, abs=0.1)
+
+
+def test_projection_weights_parallel_fiber():
+    """
+    Fiber aligned with ray (both East = 90 deg): full ZZ, zero TT.
+    """
+    w_zz, w_tt = projection_weights(
+        azimuth_i_deg=90.0,
+        azimuth_j_deg=90.0,
+        ray_azimuth_deg=90.0,
+    )
+    assert w_zz == pytest.approx(1.0, abs=1e-9)
+    assert w_tt == pytest.approx(0.0, abs=1e-9)
+
+
+def test_projection_weights_perpendicular_fiber():
+    """
+    Fiber perpendicular to ray: zero ZZ, full TT.
+    """
+    w_zz, w_tt = projection_weights(
+        azimuth_i_deg=180.0,   # North fiber
+        azimuth_j_deg=180.0,
+        ray_azimuth_deg=90.0,  # East ray
+    )
+    assert w_zz == pytest.approx(0.0, abs=1e-9)
+    assert w_tt == pytest.approx(1.0, abs=1e-9)
