@@ -1,8 +1,14 @@
+import numpy as np
 import pandas as pd
 import pytest
 from obspy import read, Stream
 from das_ancc.io.das_metadata import load_geometry, REQUIRED_COLUMNS
 from das_ancc.io.sac_reader import read_sac_segments
+from das_ancc.io.writer import (
+    save_ncf, load_ncfs,
+    save_stacked_ncf, load_stacked_ncf,
+    save_dispersion, load_dispersion,
+)
 
 
 def test_load_geometry(tmp_path, synthetic_geometry):
@@ -35,3 +41,26 @@ def test_read_sac_segments(tmp_path, synthetic_stream):
     assert len(st) == 5               # N_CH channels
     duration = st[0].stats.endtime - st[0].stats.starttime
     assert abs(duration - 1800) < 2   # within 2 seconds tolerance
+
+
+def test_ncf_roundtrip(tmp_path):
+    ncf = np.random.randn(201).astype(np.float32)
+    save_ncf(str(tmp_path), seg_id="2024-01-01T00:00:00",
+             ch_i=0, ch_j=1, component="ZZ", ncf=ncf)
+    loaded = load_ncfs(str(tmp_path), ch_i=0, ch_j=1, component="ZZ")
+    assert len(loaded) == 1
+    np.testing.assert_allclose(loaded[0], ncf)
+
+
+def test_stacked_ncf_roundtrip(tmp_path):
+    ncf = np.random.randn(201).astype(np.float32)
+    save_stacked_ncf(str(tmp_path), ch_i=0, ch_j=1, component="ZZ", ncf=ncf)
+    loaded = load_stacked_ncf(str(tmp_path), ch_i=0, ch_j=1, component="ZZ")
+    np.testing.assert_allclose(loaded, ncf)
+
+
+def test_dispersion_roundtrip(tmp_path):
+    picks = np.array([[0.5, 400.0], [1.0, 350.0], [2.0, 300.0]])
+    save_dispersion(str(tmp_path), ch_i=0, ch_j=1, component="ZZ", picks=picks)
+    loaded = load_dispersion(str(tmp_path), ch_i=0, ch_j=1, component="ZZ")
+    np.testing.assert_allclose(loaded, picks)
